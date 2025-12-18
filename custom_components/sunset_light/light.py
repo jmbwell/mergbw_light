@@ -14,7 +14,7 @@ from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_MAC
 from homeassistant.core import HomeAssistant, State
-from homeassistant.helpers import service
+from homeassistant.helpers import service, entity_platform
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 
@@ -39,19 +39,17 @@ async def async_setup_entry(
     mac_address = config_entry.data[CONF_MAC]
     async_add_entities([SunsetLight(mac_address, "Sunset Light", hass)])
 
-    service.async_register_entity_service(
-        hass,
-        DOMAIN,
+    platform = entity_platform.async_get_current_platform()
+
+    platform.async_register_entity_service(
         "set_scene",
-        SunsetLight.async_handle_set_scene,
         SERVICE_SET_SCENE_SCHEMA,
+        "async_handle_set_scene",
     )
-    service.async_register_entity_service(
-        hass,
-        DOMAIN,
+    platform.async_register_entity_service(
         "set_white",
-        SunsetLight.async_handle_set_white,
         SERVICE_SET_WHITE_SCHEMA,
+        "async_handle_set_white",
     )
 
 

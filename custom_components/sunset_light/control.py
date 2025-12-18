@@ -31,18 +31,43 @@ def build_command(cmd_code: int, value: bytes = b'') -> bytes:
     full_packet = data_for_checksum + bytes([checksum])
     return full_packet
 
+# Try to import bleak_retry_connector for Home Assistant usage
+try:
+    from bleak_retry_connector import establish_connection, BleakClientWithServiceCache
+    HAS_RETRY = True
+except ImportError:
+    HAS_RETRY = False
+
 async def send_command(device, command: bytes):
-    """Connects to the device (MAC string or BLEDevice object) and sends a command."""
-    async with BleakClient(device) as client:
-        if client.is_connected:
-            # Determine address for logging
-            address = device.address if hasattr(device, 'address') else device
-            print(f"Sending command: {command.hex()} to {address}")
-            await client.write_gatt_char(CHARACTERISTIC_WRITEABLE, command)
-            print("Command sent.")
+    """Connects to the device and sends a command."""
+    client = None
+    try:
+        # Check if we can use the robust connector (HA environment)
+        if HAS_RETRY and hasattr(device, "address"):
+            client = await establish_connection(BleakClientWithServiceCache, device, device.address)
+            if client.is_connected:
+                print(f"Sending command: {command.hex()} to {device.address}")
+                await client.write_gatt_char(CHARACTERISTIC_WRITEABLE, command)
+                print("Command sent.")
+            else:
+                print(f"Failed to connect to {device.address}")
         else:
-            address = device.address if hasattr(device, 'address') else device
-            print(f"Failed to connect to {address}")
+            # Fallback for local testing or string address
+            async with BleakClient(device) as client:
+                if client.is_connected:
+                    # Determine address for logging
+                    address = device.address if hasattr(device, 'address') else device
+                    print(f"Sending command: {command.hex()} to {address}")
+                    await client.write_gatt_char(CHARACTERISTIC_WRITEABLE, command)
+                    print("Command sent.")
+                else:
+                    address = device.address if hasattr(device, 'address') else device
+                    print(f"Failed to connect to {address}")
+    except Exception as e:
+        print(f"Error sending command: {e}")
+    finally:
+        if client and HAS_RETRY and hasattr(device, "address"):
+            await client.disconnect()
 
 async def turn_on(device):
     """Turns the light on."""
