@@ -1,6 +1,6 @@
 """Constants for the MeRGBW Light integration."""
 
-DOMAIN = "sunset_light"
+DOMAIN = "mergbw_light"
 CONF_PROFILE = "profile"
 DEFAULT_PROFILE = "sunset_light"
 # Hexagon-only services (will be no-ops for default profile)

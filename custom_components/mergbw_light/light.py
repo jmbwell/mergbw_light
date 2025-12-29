@@ -110,7 +110,7 @@ async def async_setup_entry(
     )
 
 
-class SunsetLight(LightEntity):
+class MeRGBWLight(LightEntity):
     """Representation of a MeRGBW Light."""
 
     _attr_supported_color_modes = {ColorMode.RGB}
