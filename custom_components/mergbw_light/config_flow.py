@@ -45,6 +45,23 @@ class MeRGBWLightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return PROFILE_HEXAGON
         return DEFAULT_PROFILE
 
+    async def async_step_bluetooth(self, discovery_info):
+        """Handle bluetooth discovery to auto-create an entry."""
+        address = discovery_info.address
+        name = discovery_info.name or "MeRGBW Light"
+        await self.async_set_unique_id(address)
+        self._abort_if_unique_id_configured()
+
+        profile_key = self._guess_profile(discovery_info.name or "")
+        return self.async_create_entry(
+            title=name,
+            data={
+                CONF_MAC: address,
+                CONF_PROFILE: profile_key,
+                "device_source": "bluetooth",
+            },
+        )
+
     async def async_step_user(self, user_input=None):
         """Handle the initial step."""
         errors = {}
