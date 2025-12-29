@@ -200,6 +200,67 @@ class HexagonProfile(ProtocolProfile):
         ]
         return packets
 
+    def build_scene_by_id(self, scene_id: int, param: Optional[int]) -> List[bytes]:
+        """Set scene by numeric ID with optional param override."""
+        packets = [
+            _build_packet(0x06, self._int_to_bytes_be(scene_id)),
+            _build_packet(0x0F, self._int_to_bytes_be(param if param is not None else self._default_scene_param)),
+        ]
+        return packets
+
+    def build_music_mode(self, mode) -> List[bytes]:
+        """Set music mode (1-6 or name mapping)."""
+        mode_map = {
+            "spectrum1": 1,
+            "spectrum2": 2,
+            "spectrum3": 3,
+            "flowing": 4,
+            "rolling": 5,
+            "rhythm": 6,
+        }
+        if isinstance(mode, str):
+            mode_id = mode_map.get(mode.lower())
+            if mode_id is None:
+                return []
+        else:
+            mode_id = int(mode)
+        mode_id = max(1, min(6, mode_id))
+        return [_build_packet(0x07, bytes([mode_id]))]
+
+    def build_music_sensitivity(self, value: int) -> List[bytes]:
+        """Set music sensitivity 0-100."""
+        clamped = max(0, min(100, int(value)))
+        return [_build_packet(0x08, bytes([clamped]))]
+
+    def build_schedule(
+        self,
+        on_enabled: bool,
+        on_hour: int,
+        on_minute: int,
+        on_days_mask: int,
+        off_enabled: bool,
+        off_hour: int,
+        off_minute: int,
+        off_days_mask: int,
+    ) -> List[bytes]:
+        """Set combined on/off schedule observed in captures (cmd 0x0A)."""
+        def _clamp(val, lower, upper):
+            return max(lower, min(upper, int(val)))
+
+        payload = bytes(
+            [
+                0x01 if on_enabled else 0x00,
+                _clamp(on_hour, 0, 23),
+                _clamp(on_minute, 0, 59),
+                _clamp(on_days_mask, 0, 0x7F),
+                0x01 if off_enabled else 0x00,
+                _clamp(off_hour, 0, 23),
+                _clamp(off_minute, 0, 59),
+                _clamp(off_days_mask, 0, 0x7F),
+            ]
+        )
+        return [_build_packet(0x0A, payload)]
+
 
 PROFILE_SUNSET = "sunset_light"
 PROFILE_HEXAGON = "hexagon_light"

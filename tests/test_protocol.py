@@ -35,6 +35,11 @@ def test_hexagon_packets():
     assert color_pkt[1] == 0x03
     scene_packets = p.build_scene("Symphony")
     assert scene_packets and scene_packets[0][1] == 0x06
+    # Scene by id yields two packets: 0x06 and 0x0F
+    by_id = p.build_scene_by_id(0x1234, 0x5678)
+    assert by_id[0][1] == 0x06 and by_id[1][1] == 0x0F
+    assert by_id[0][4:6] == b"\x12\x34"
+    assert by_id[1][4:6] == b"\x56\x78"
 
 
 def test_checksum_and_build_packet():
@@ -68,3 +73,14 @@ def test_hexagon_color_and_brightness_scaling():
 def test_hexagon_unknown_scene_returns_empty():
     p = HexagonProfile()
     assert p.build_scene("not-a-scene") == []
+
+
+def test_hexagon_music_and_schedule():
+    p = HexagonProfile()
+    mode_pkt = p.build_music_mode("rolling")[0]
+    assert mode_pkt[1] == 0x07 and mode_pkt[4] == 5  # rolling -> 5
+    sens_pkt = p.build_music_sensitivity(60)[0]
+    assert sens_pkt[1] == 0x08 and sens_pkt[4] == 60
+    sched_pkt = p.build_schedule(True, 10, 5, 0x03, False, 20, 10, 0x7F)[0]
+    assert sched_pkt[1] == 0x0A
+    assert sched_pkt[4:12] == bytes([1, 10, 5, 0x03, 0, 20, 10, 0x7F])
