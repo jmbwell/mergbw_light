@@ -6,6 +6,6 @@
   "dependencies": ["bluetooth"],
   "codeowners": ["@jmbwell"],
   "requirements": ["bleak"],
-  "version": "0.2.0",
+  "version": "0.2.1",
   "config_flow": true
 }
