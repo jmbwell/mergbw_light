@@ -18,6 +18,7 @@ from homeassistant.helpers import service, entity_platform
 import homeassistant.helpers.config_validation as cv
 from homeassistant.const import WEEKDAYS
 import voluptuous as vol
+from homeassistant.helpers.event import async_call_later
 
 from bleak_retry_connector import establish_connection, BleakClientWithServiceCache
 
@@ -41,6 +42,7 @@ SERVICE_SET_SCENE_SCHEMA = cv.make_entity_service_schema({
 SERVICE_SET_WHITE_SCHEMA = cv.make_entity_service_schema({})
 
 _LOGGER = logging.getLogger(__name__)
+IDLE_DISCONNECT_SECONDS = 15
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -128,10 +130,12 @@ class MeRGBWLight(LightEntity):
         self._hass = hass
         self._client = None
         self._disconnect_timer = None
+        self._command_lock = asyncio.Lock()
         self._profile_key = profile_key
         self._profile = get_profile(profile_key)
         self._attr_effect_list = self._profile.effect_list
         self._weekday_index = {day: idx for idx, day in enumerate(WEEKDAYS)}
+        self._attr_available = False
 
     @property
     def unique_id(self):
@@ -190,32 +194,84 @@ class MeRGBWLight(LightEntity):
             self._mac,
             disconnected_callback=self._on_disconnected,
         )
+        self._attr_available = True
+        self.async_write_ha_state()
         return self._client
 
     def _on_disconnected(self, client):
         """Handle disconnection."""
         _LOGGER.info("Disconnected from %s", self._mac)
         self._client = None
+        self._attr_available = False
+        if self._disconnect_timer:
+            self._disconnect_timer()
+            self._disconnect_timer = None
+        if self._hass:
+            self._hass.async_create_task(self.async_write_ha_state())
 
     async def async_will_remove_from_hass(self):
         """Disconnect when removed."""
         if self._client:
             await self._client.disconnect()
+        if self._disconnect_timer:
+            self._disconnect_timer()
+            self._disconnect_timer = None
+
+    async def async_added_to_hass(self):
+        """Set up lifecycle callbacks when added."""
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            self._hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, self._async_handle_hass_stop)
+        )
+
+    async def _async_handle_hass_stop(self, _event):
+        """Disconnect cleanly when HA stops."""
+        if self._disconnect_timer:
+            self._disconnect_timer()
+            self._disconnect_timer = None
+        if self._client:
+            await self._client.disconnect()
+            self._client = None
+            self._attr_available = False
+            self.async_write_ha_state()
+
+    def _schedule_disconnect(self):
+        """Schedule a disconnect after idle timeout."""
+        if self._disconnect_timer:
+            self._disconnect_timer()
+        self._disconnect_timer = async_call_later(self._hass, IDLE_DISCONNECT_SECONDS, self._async_idle_disconnect)
+
+    async def _async_idle_disconnect(self, _now):
+        """Disconnect after idle period to free BLE resources."""
+        self._disconnect_timer = None
+        if self._client:
+            await self._client.disconnect()
+            self._client = None
+            self._attr_available = False
+            self.async_write_ha_state()
+
+    async def _run_with_client(self, handler):
+        """Serialize BLE writes and ensure connection."""
+        async with self._command_lock:
+            client = await self._ensure_connected()
+            try:
+                return await handler(client)
+            finally:
+                self._schedule_disconnect()
 
     async def async_turn_on(self, **kwargs):
         """Instruct the light to turn on."""
-        client = await self._ensure_connected()
-        await control.turn_on(client, self._profile)
+        await self._run_with_client(lambda client: control.turn_on(client, self._profile))
         self._is_on = True
 
         if ATTR_RGB_COLOR in kwargs:
             r, g, b = kwargs[ATTR_RGB_COLOR]
-            await control.set_color(client, self._profile, r, g, b)
+            await self._run_with_client(lambda client: control.set_color(client, self._profile, r, g, b))
             self._rgb_color = (r, g, b)
             self._effect = None
         elif ATTR_EFFECT in kwargs:
             effect = kwargs[ATTR_EFFECT]
-            await control.set_scene(client, self._profile, effect)
+            await self._run_with_client(lambda client: control.set_scene(client, self._profile, effect))
             self._effect = effect
         else:
             # Default behavior if just toggled on without params
@@ -224,7 +280,7 @@ class MeRGBWLight(LightEntity):
 
         if ATTR_BRIGHTNESS in kwargs:
             brightness = kwargs[ATTR_BRIGHTNESS]
-            await control.set_brightness(client, self._profile, brightness)
+            await self._run_with_client(lambda client: control.set_brightness(client, self._profile, brightness))
             self._brightness = brightness
         elif self._brightness is None:
              self._brightness = 255
@@ -233,22 +289,19 @@ class MeRGBWLight(LightEntity):
 
     async def async_turn_off(self, **kwargs):
         """Instruct the light to turn off."""
-        client = await self._ensure_connected()
-        await control.turn_off(client, self._profile)
+        await self._run_with_client(lambda client: control.turn_off(client, self._profile))
         self._is_on = False
         self.async_write_ha_state()
 
     async def async_handle_set_scene(self, scene_name: str):
         """Handle the set_scene service call."""
-        client = await self._ensure_connected()
-        await control.set_scene(client, self._profile, scene_name)
+        await self._run_with_client(lambda client: control.set_scene(client, self._profile, scene_name))
         self._effect = scene_name
         self.async_write_ha_state()
 
     async def async_handle_set_white(self):
         """Handle the set_white service call."""
-        client = await self._ensure_connected()
-        await control.set_white(client, self._profile)
+        await self._run_with_client(lambda client: control.set_white(client, self._profile))
         self._rgb_color = (255, 255, 255)
         self._brightness = 255
         self._is_on = True
@@ -257,20 +310,19 @@ class MeRGBWLight(LightEntity):
 
     async def async_handle_set_scene_id(self, scene_id: int, scene_param: int | None = None):
         """Set scene by numeric ID (Hexagon-only)."""
-        client = await self._ensure_connected()
-        await control.set_scene_id(client, self._profile, scene_id, scene_param)
+        await self._run_with_client(
+            lambda client: control.set_scene_id(client, self._profile, scene_id, scene_param)
+        )
         self._effect = f"Scene {scene_id}"
         self.async_write_ha_state()
 
     async def async_handle_set_music_mode(self, mode):
         """Set music mode (Hexagon-only)."""
-        client = await self._ensure_connected()
-        await control.set_music_mode(client, self._profile, mode)
+        await self._run_with_client(lambda client: control.set_music_mode(client, self._profile, mode))
 
     async def async_handle_set_music_sensitivity(self, value: int):
         """Set music sensitivity 0-100 (Hexagon-only)."""
-        client = await self._ensure_connected()
-        await control.set_music_sensitivity(client, self._profile, value)
+        await self._run_with_client(lambda client: control.set_music_sensitivity(client, self._profile, value))
 
     async def async_handle_set_schedule(
         self,
@@ -284,8 +336,6 @@ class MeRGBWLight(LightEntity):
         off_days_mask,
     ):
         """Set combined on/off schedule (Hexagon-only)."""
-        client = await self._ensure_connected()
-
         def mask_from(value):
             if isinstance(value, int):
                 return value
@@ -296,15 +346,17 @@ class MeRGBWLight(LightEntity):
                     mask |= 1 << idx
             return mask
 
-        await control.set_schedule(
-            client,
-            self._profile,
-            on_enabled,
-            on_hour,
-            on_minute,
-            mask_from(on_days_mask),
-            off_enabled,
-            off_hour,
-            off_minute,
-            mask_from(off_days_mask),
+        await self._run_with_client(
+            lambda client: control.set_schedule(
+                client,
+                self._profile,
+                on_enabled,
+                on_hour,
+                on_minute,
+                mask_from(on_days_mask),
+                off_enabled,
+                off_hour,
+                off_minute,
+                mask_from(off_days_mask),
+            )
         )
