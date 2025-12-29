@@ -23,7 +23,7 @@ class MeRGBWLightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for MeRGBW Light."""
 
     VERSION = 1
-    CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
+    CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_PUSH
 
     def _discover_devices(self):
         service_uuid = "0000fff0-0000-1000-8000-00805f9b34fb"
