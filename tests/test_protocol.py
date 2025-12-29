@@ -4,8 +4,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-PROTOCOL_PATH = ROOT / "custom_components" / "mergbw_light" / "protocol.py"
-spec = util.spec_from_file_location("mergbw_light_protocol", PROTOCOL_PATH)
+PROTOCOL_PATH = ROOT / "custom_components" / "mergbw" / "protocol.py"
+spec = util.spec_from_file_location("mergbw_protocol", PROTOCOL_PATH)
 protocol = util.module_from_spec(spec)
 assert spec and spec.loader
 spec.loader.exec_module(protocol)

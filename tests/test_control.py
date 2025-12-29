@@ -8,18 +8,18 @@ import pytest
 import asyncio
 
 ROOT = Path(__file__).resolve().parents[1]
-CONTROL_PATH = ROOT / "custom_components" / "mergbw_light" / "control.py"
+CONTROL_PATH = ROOT / "custom_components" / "mergbw" / "control.py"
 
 # Stub package modules so relative imports inside control.py work without importing HA.
 custom_components = types.ModuleType("custom_components")
 custom_components.__path__ = [str(ROOT / "custom_components")]
 sys.modules.setdefault("custom_components", custom_components)
-mergbw_pkg = types.ModuleType("custom_components.mergbw_light")
-mergbw_pkg.__path__ = [str(ROOT / "custom_components" / "mergbw_light")]
-sys.modules.setdefault("custom_components.mergbw_light", mergbw_pkg)
+mergbw_pkg = types.ModuleType("custom_components.mergbw")
+mergbw_pkg.__path__ = [str(ROOT / "custom_components" / "mergbw")]
+sys.modules.setdefault("custom_components.mergbw", mergbw_pkg)
 
 control_spec = util.spec_from_file_location(
-    "custom_components.mergbw_light.control",
+    "custom_components.mergbw.control",
     CONTROL_PATH,
 )
 control = util.module_from_spec(control_spec)

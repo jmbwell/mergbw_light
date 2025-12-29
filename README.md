@@ -42,7 +42,7 @@ Choose the profile during setup; the profile drives command builders, effect lis
 4. Restart Home Assistant.
 
 **Manual**
-1. Copy `custom_components/mergbw_light` into the `custom_components` directory of your Home Assistant config.
+1. Copy `custom_components/mergbw` into the `custom_components` directory of your Home Assistant config.
 2. Restart Home Assistant.
 
 ## Configuration
@@ -61,7 +61,7 @@ Call these under the `light` domain.
 # Hexagon: play a specific scene by ID with optional parameter
 service: light.set_scene_id
 target:
-  entity_id: light.mergbw_light
+  entity_id: light.mergbw
 data:
   scene_id: 42
   scene_param: 3
@@ -71,7 +71,7 @@ data:
 # Hexagon: music mode by name or number
 service: light.set_music_mode
 target:
-  entity_id: light.mergbw_light
+  entity_id: light.mergbw
 data:
   mode: spectrum2  # or 2
 ```
@@ -80,7 +80,7 @@ data:
 # Hexagon: schedule on/off with weekday names or bitmask (0x7F = daily)
 service: light.set_schedule
 target:
-  entity_id: light.mergbw_light
+  entity_id: light.mergbw
 data:
   on_enabled: true
   on_hour: 7
@@ -96,7 +96,7 @@ data:
 # Both profiles: select an effect by name from the profile's effect list
 service: light.turn_on
 target:
-  entity_id: light.mergbw_light
+  entity_id: light.mergbw
 data:
   effect: Rainbow
 ```
@@ -118,7 +118,7 @@ data:
 
 ## Development
 - Packet builder tests live in `tests/test_protocol.py`; run them with `pytest`.
-- Add a new profile by subclassing `ProtocolProfile` in `custom_components/mergbw_light/protocol.py`, adding it to `list_profiles`/`get_profile`, extending `services.yaml` if needed, and adding tests.
+- Add a new profile by subclassing `ProtocolProfile` in `custom_components/mergbw/protocol.py`, adding it to `list_profiles`/`get_profile`, extending `services.yaml` if needed, and adding tests.
 
 ## Protocol notes
 - BLE service: `0000fff0-0000-1000-8000-00805f9b34fb`
