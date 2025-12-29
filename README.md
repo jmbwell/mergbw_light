@@ -13,7 +13,7 @@ You choose the profile during config flow. The selected profile supplies command
 ## Installation
 
 Option A (manual):
-1.  Copy the `custom_components/sunset_light` directory to the `custom_components` directory of your Home Assistant configuration.
+1.  Copy the `custom_components/mergbw_light` directory to the `custom_components` directory of your Home Assistant configuration.
 2.  Restart Home Assistant.
 
 Option B (HACS):
@@ -54,7 +54,7 @@ After setup, Home Assistant creates a light entity. Standard HA light controls (
 
 ## Adding a new profile
 
-1. Create a subclass of `ProtocolProfile` in `custom_components/sunset_light/protocol.py` that implements `build_power/color/brightness/scene` (and optional music/schedule).
+1. Create a subclass of `ProtocolProfile` in `custom_components/mergbw_light/protocol.py` that implements `build_power/color/brightness/scene` (and optional music/schedule).
 2. Add it to `list_profiles` and `get_profile`.
 3. Provide an effect list and any scene ID/name mappings.
 4. Extend `services.yaml` if the profile introduces new entity services.

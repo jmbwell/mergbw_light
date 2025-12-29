@@ -19,7 +19,7 @@ from .protocol import list_profiles, PROFILE_HEXAGON
 
 _LOGGER = logging.getLogger(__name__)
 
-class SunsetLightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class MeRGBWLightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for MeRGBW Light."""
 
     VERSION = 1
