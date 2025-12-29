@@ -1,4 +1,4 @@
-"""Constants for the Sunset Light integration."""
+"""Constants for the MeRGBW Light integration."""
 
 DOMAIN = "sunset_light"
 CONF_PROFILE = "profile"

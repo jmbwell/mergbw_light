@@ -47,11 +47,11 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities,
 ):
-    """Set up the Sunset Light platform."""
+    """Set up the MeRGBW Light platform."""
     _LOGGER.info("async_setup_entry data=%s", config_entry.data)
     mac_address = config_entry.data[CONF_MAC]
     profile_key = config_entry.data.get(CONF_PROFILE, DEFAULT_PROFILE)
-    light = SunsetLight(mac_address, "Sunset Light", hass, profile_key)
+    light = SunsetLight(mac_address, "MeRGBW Light", hass, profile_key)
     async_add_entities([light])
 
     platform = entity_platform.async_get_current_platform()
@@ -111,14 +111,14 @@ async def async_setup_entry(
 
 
 class SunsetLight(LightEntity):
-    """Representation of a Sunset Light."""
+    """Representation of a MeRGBW Light."""
 
     _attr_supported_color_modes = {ColorMode.RGB}
     _attr_color_mode = ColorMode.RGB
     _attr_supported_features = LightEntityFeature.EFFECT
 
     def __init__(self, mac, name, hass: HomeAssistant, profile_key: str):
-        """Initialize a Sunset Light."""
+        """Initialize a MeRGBW Light."""
         self._mac = mac
         self._name = name
         self._is_on = None

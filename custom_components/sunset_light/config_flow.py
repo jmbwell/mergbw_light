@@ -1,4 +1,4 @@
-"""Config flow for Sunset Light."""
+"""Config flow for MeRGBW Light."""
 import logging
 
 import voluptuous as vol
@@ -20,7 +20,7 @@ from .protocol import list_profiles, PROFILE_HEXAGON
 _LOGGER = logging.getLogger(__name__)
 
 class SunsetLightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Sunset Light."""
+    """Handle a config flow for MeRGBW Light."""
 
     VERSION = 1
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
@@ -60,7 +60,7 @@ class SunsetLightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     await self.async_set_unique_id(mac)
                     self._abort_if_unique_id_configured()
                     user_input[CONF_MAC] = mac
-                    return self.async_create_entry(title="Sunset Light", data=user_input)
+                    return self.async_create_entry(title="MeRGBW Light", data=user_input)
             else:
                 mac = self._discover_devices().get(source)
                 if not mac:
@@ -73,7 +73,7 @@ class SunsetLightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     user_input[CONF_MAC] = mac
                     await self.async_set_unique_id(mac)
                     self._abort_if_unique_id_configured()
-                    return self.async_create_entry(title="Sunset Light", data=user_input)
+                    return self.async_create_entry(title="MeRGBW Light", data=user_input)
 
         profile_options = {key: label for key, label in list_profiles()}
         discovered = self._discover_devices()

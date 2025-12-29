@@ -1,4 +1,4 @@
-"""Protocol profiles for Sunset Light devices."""
+"""Protocol profiles for MeRGBW lights."""
 
 import colorsys
 from dataclasses import dataclass

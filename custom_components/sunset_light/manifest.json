@@ -1,8 +1,8 @@
 
 {
   "domain": "sunset_light",
-  "name": "Sunset Light",
-  "documentation": "https://github.com/King1704G/ha-sunset-light-hack",
+  "name": "MeRGBW Light",
+  "documentation": "https://github.com/jmbwell/custom_components-sunset_light_cheapass_amazon_light",
   "dependencies": ["bluetooth"],
   "codeowners": ["@King1704G"],
   "requirements": ["bleak"],

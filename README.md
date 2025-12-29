@@ -19,13 +19,13 @@ Option A (manual):
 Option B (HACS):
 1.  In HACS, open the ⋮ menu → Custom repositories.
 2.  Add this repo URL and set type to “Integration”.
-3.  Install “Sunset Light” from HACS.
+3.  Install “MeRGBW Light” from HACS.
 4.  Restart Home Assistant.
 
 ## Configuration
 
 1. Go to **Settings** → **Devices & Services**.
-2. Click **+ Add Integration**, search for “Sunset Light,” and select it.
+2. Click **+ Add Integration**, search for “MeRGBW Light,” and select it.
 3. In the config flow:
    - If your light is discovered, pick it from the dropdown (name + MAC). The profile (Sunset/Hexagon) will be guessed but can be overridden.
    - Or choose “Manual entry” and enter the Bluetooth MAC plus the profile.
