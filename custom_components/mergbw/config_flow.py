@@ -15,9 +15,7 @@ from homeassistant.helpers.selector import (
 )
 
 from .const import (
-    CONF_AVAILABILITY_TIMEOUT,
     CONF_PROFILE,
-    DEFAULT_AVAILABILITY_TIMEOUT,
     DEFAULT_PROFILE,
     DOMAIN,
     SERVICE_UUID,
@@ -31,10 +29,6 @@ class MeRGBWLightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_PUSH
-
-    @staticmethod
-    def async_get_options_flow(config_entry):
-        return MeRGBWLightOptionsFlow(config_entry)
 
     def _discover_devices(self):
         service_uuid = SERVICE_UUID
@@ -170,27 +164,3 @@ class MeRGBWLightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "helper": "Choose a discovered device or select 'Manual entry' and fill Bluetooth MAC + type.",
             },
         )
-
-
-class MeRGBWLightOptionsFlow(config_entries.OptionsFlow):
-    """Handle MeRGBW Light options."""
-
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        self._config_entry = config_entry
-
-    async def async_step_init(self, user_input=None):
-        if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
-
-        current = self._config_entry.options.get(
-            CONF_AVAILABILITY_TIMEOUT, DEFAULT_AVAILABILITY_TIMEOUT
-        )
-        data_schema = vol.Schema(
-            {
-                vol.Required(
-                    CONF_AVAILABILITY_TIMEOUT,
-                    default=current,
-                ): vol.All(int, vol.Range(min=30, max=3600)),
-            }
-        )
-        return self.async_show_form(step_id="init", data_schema=data_schema)

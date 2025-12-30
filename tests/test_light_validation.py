@@ -148,11 +148,11 @@ class DummyHass:
 
 
 def test_validate_scene_accepts_known_scene():
-    entity = light.MeRGBWLight("00:11:22:33:44:55", "Test", DummyHass(), "sunset_light", 300)
+    entity = light.MeRGBWLight("00:11:22:33:44:55", "Test", DummyHass(), "sunset_light")
     entity._validate_scene("ghost")
 
 
 def test_validate_scene_rejects_unknown_scene():
-    entity = light.MeRGBWLight("00:11:22:33:44:55", "Test", DummyHass(), "sunset_light", 300)
+    entity = light.MeRGBWLight("00:11:22:33:44:55", "Test", DummyHass(), "sunset_light")
     with pytest.raises(HomeAssistantError):
         entity._validate_scene("not-a-scene")
