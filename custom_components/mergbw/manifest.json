@@ -6,12 +6,13 @@
   "dependencies": ["bluetooth"],
   "codeowners": ["@jmbwell"],
   "requirements": ["bleak", "bleak_retry_connector"],
+  "iot_class": "local_push",
   "bluetooth": [
     {
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     }
   ],
-  "version": "0.2.2",
+  "version": "0.2.3",
   "config_flow": true,
-    "issue_tracker": "https://github.com/jmbwell/mergbw/issues"
+  "issue_tracker": "https://github.com/jmbwell/mergbw/issues"
 }

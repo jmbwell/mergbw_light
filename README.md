@@ -14,6 +14,7 @@ Home Assistant integration for MeRGBW Bluetooth LE lights (Hexagon Light and Sun
 - [Usage](#usage)
 - [Services](#services)
 - [Scenes / effects](#scenes--effects)
+- [Release notes](#release-notes)
 - [Troubleshooting](#troubleshooting)
 - [Development](#development)
 - [Protocol notes](#protocol-notes)
@@ -122,6 +123,9 @@ data:
 ## Scenes / effects
 - Sunset profile: effect list mirrors the original device scenes.
 - Hexagon profile: Classic, Festival, and extended “Other” scenes are exposed by name; any numeric ID works via `set_scene_id`.
+
+## Release notes
+- 0.2.3: Add `iot_class` metadata and tidy manifest formatting.
 
 ## Troubleshooting
 - Stay in Bluetooth range and ensure no other host keeps the device connected.
