@@ -1,8 +1,6 @@
 from importlib import util
 from pathlib import Path
 
-import pytest
-
 ROOT = Path(__file__).resolve().parents[1]
 PROTOCOL_PATH = ROOT / "custom_components" / "mergbw" / "protocol.py"
 spec = util.spec_from_file_location("mergbw_protocol", PROTOCOL_PATH)

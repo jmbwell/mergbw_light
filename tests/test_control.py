@@ -3,8 +3,6 @@ import types
 from importlib import util
 from pathlib import Path
 
-import pytest
-
 import asyncio
 
 ROOT = Path(__file__).resolve().parents[1]

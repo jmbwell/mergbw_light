@@ -13,8 +13,8 @@ from homeassistant.components.light import (
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_MAC, EVENT_HOMEASSISTANT_STOP
-from homeassistant.core import HomeAssistant, State
-from homeassistant.helpers import service, entity_platform
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_platform
 import homeassistant.helpers.config_validation as cv
 from homeassistant.const import WEEKDAYS
 import voluptuous as vol
