@@ -1,6 +1,7 @@
 """Platform for light integration."""
 import logging
 import asyncio
+from datetime import timedelta
 
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
@@ -19,14 +20,17 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.const import WEEKDAYS
 from homeassistant.exceptions import HomeAssistantError
 import voluptuous as vol
-from homeassistant.helpers.event import async_call_later
+from homeassistant.helpers.event import async_call_later, async_track_time_interval
+from homeassistant.util import dt as dt_util
 
 from bleak_retry_connector import establish_connection, BleakClientWithServiceCache
 
 from .const import (
+    CONF_AVAILABILITY_TIMEOUT,
     CONF_PROFILE,
-    DEFAULT_PROFILE,
+    DEFAULT_AVAILABILITY_TIMEOUT,
     DOMAIN,
+    SERVICE_UUID,
     SERVICE_SET_SCENE_ID,
     SERVICE_SET_MUSIC_MODE,
     SERVICE_SET_MUSIC_SENSITIVITY,
@@ -54,7 +58,10 @@ async def async_setup_entry(
     _LOGGER.info("async_setup_entry data=%s", config_entry.data)
     mac_address = config_entry.data[CONF_MAC]
     profile_key = config_entry.data.get(CONF_PROFILE, DEFAULT_PROFILE)
-    light = MeRGBWLight(mac_address, "MeRGBW Light", hass, profile_key)
+    availability_timeout = config_entry.options.get(
+        CONF_AVAILABILITY_TIMEOUT, DEFAULT_AVAILABILITY_TIMEOUT
+    )
+    light = MeRGBWLight(mac_address, "MeRGBW Light", hass, profile_key, availability_timeout)
     async_add_entities([light])
 
     platform = entity_platform.async_get_current_platform()
@@ -121,7 +128,7 @@ class MeRGBWLight(LightEntity):
     _attr_supported_features = LightEntityFeature.EFFECT
     _attr_icon = "mdi:hexagon-multiple-outline"
 
-    def __init__(self, mac, name, hass: HomeAssistant, profile_key: str):
+    def __init__(self, mac, name, hass: HomeAssistant, profile_key: str, availability_timeout: int):
         """Initialize a MeRGBW Light."""
         self._mac = mac
         self._name = name
@@ -138,6 +145,18 @@ class MeRGBWLight(LightEntity):
         self._attr_effect_list = self._profile.effect_list
         self._weekday_index = {day: idx for idx, day in enumerate(WEEKDAYS)}
         self._attr_available = True
+
+        self._last_seen = None
+        self._availability_timeout = availability_timeout
+        self._availability_unsub = None
+        self._ble_unsub = None
+
+    def _set_available(self, available: bool):
+        """Update availability and push state if it changed."""
+        if self._attr_available == available:
+            return
+        self._attr_available = available
+        self.async_write_ha_state()
 
     def _validate_scene(self, scene_name: str) -> None:
         """Raise if the scene is unsupported by the current profile."""
@@ -225,12 +244,42 @@ class MeRGBWLight(LightEntity):
             self._disconnect_timer()
             self._disconnect_timer = None
 
+    def _async_ble_callback(self, service_info, change):
+        if service_info.address != self._mac:
+            return
+        self._last_seen = dt_util.utcnow()
+        self._set_available(True)
+
+    def _async_check_availability(self, _now):
+        if self._last_seen is None:
+            return
+        if (dt_util.utcnow() - self._last_seen).total_seconds() > self._availability_timeout:
+            self._set_available(False)
+
     async def async_added_to_hass(self):
         """Set up lifecycle callbacks when added."""
         await super().async_added_to_hass()
         self.async_on_remove(
             self._hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, self._async_handle_hass_stop)
         )
+        self._ble_unsub = bluetooth.async_register_callback(
+            self._hass,
+            self._async_ble_callback,
+            bluetooth.BluetoothCallbackMatcher(
+                address=self._mac,
+                service_uuid=SERVICE_UUID,
+            ),
+        )
+        interval = max(30, int(self._availability_timeout / 2))
+        self._availability_unsub = async_track_time_interval(
+            self._hass,
+            self._async_check_availability,
+            timedelta(seconds=interval),
+        )
+        if self._ble_unsub:
+            self.async_on_remove(self._ble_unsub)
+        if self._availability_unsub:
+            self.async_on_remove(self._availability_unsub)
 
     async def _async_handle_hass_stop(self, _event):
         """Disconnect cleanly when HA stops."""

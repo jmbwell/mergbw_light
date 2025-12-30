@@ -14,7 +14,13 @@ from homeassistant.helpers.selector import (
     TextSelector,
 )
 
-from .const import CONF_PROFILE, DEFAULT_PROFILE, DOMAIN
+from .const import (
+    CONF_AVAILABILITY_TIMEOUT,
+    CONF_PROFILE,
+    DEFAULT_AVAILABILITY_TIMEOUT,
+    DOMAIN,
+    SERVICE_UUID,
+)
 from .protocol import list_profiles, PROFILE_HEXAGON
 
 _LOGGER = logging.getLogger(__name__)
@@ -25,8 +31,12 @@ class MeRGBWLightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_PUSH
 
+    @staticmethod
+    def async_get_options_flow(config_entry):
+        return MeRGBWLightOptionsFlow(config_entry)
+
     def _discover_devices(self):
-        service_uuid = "0000fff0-0000-1000-8000-00805f9b34fb"
+        service_uuid = SERVICE_UUID
         devices = {}
         for info in bluetooth.async_discovered_service_info(self.hass, connectable=True):
             uuids = {s.lower() for s in (info.service_uuids or [])}
@@ -159,3 +169,27 @@ class MeRGBWLightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "helper": "Choose a discovered device or select 'Manual entry' and fill Bluetooth MAC + type.",
             },
         )
+
+
+class MeRGBWLightOptionsFlow(config_entries.OptionsFlow):
+    """Handle MeRGBW Light options."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        self._config_entry = config_entry
+
+    async def async_step_init(self, user_input=None):
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        current = self._config_entry.options.get(
+            CONF_AVAILABILITY_TIMEOUT, DEFAULT_AVAILABILITY_TIMEOUT
+        )
+        data_schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_AVAILABILITY_TIMEOUT,
+                    default=current,
+                ): vol.All(int, vol.Range(min=30, max=3600)),
+            }
+        )
+        return self.async_show_form(step_id="init", data_schema=data_schema)

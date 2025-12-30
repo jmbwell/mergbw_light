@@ -31,6 +31,16 @@ entity_platform = types.ModuleType("homeassistant.helpers.entity_platform")
 cv_mod = types.ModuleType("homeassistant.helpers.config_validation")
 event_mod = types.ModuleType("homeassistant.helpers.event")
 exceptions_mod = types.ModuleType("homeassistant.exceptions")
+util_mod = types.ModuleType("homeassistant.util")
+dt_mod = types.ModuleType("homeassistant.util.dt")
+
+from datetime import datetime, timezone
+
+def utcnow():
+    return datetime.now(timezone.utc)
+
+dt_mod.utcnow = utcnow
+util_mod.dt = dt_mod
 
 class LightEntity:
     pass
@@ -50,6 +60,16 @@ light_mod.LightEntityFeature = LightEntityFeature
 
 bluetooth_mod.async_ble_device_from_address = lambda *args, **kwargs: None
 
+class BluetoothCallbackMatcher:
+    def __init__(self, *args, **kwargs):
+        pass
+
+def async_register_callback(*args, **kwargs):
+    return lambda: None
+
+bluetooth_mod.BluetoothCallbackMatcher = BluetoothCallbackMatcher
+bluetooth_mod.async_register_callback = async_register_callback
+
 const_mod.CONF_MAC = "mac"
 const_mod.EVENT_HOMEASSISTANT_STOP = "homeassistant_stop"
 const_mod.WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
@@ -67,7 +87,12 @@ entity_platform.async_get_current_platform = lambda: None
 def _async_call_later(*args, **kwargs):
     return lambda: None
 
+
+def _async_track_time_interval(*args, **kwargs):
+    return lambda: None
+
 event_mod.async_call_later = _async_call_later
+event_mod.async_track_time_interval = _async_track_time_interval
 
 # Voluptuous stub
 vol_mod = types.ModuleType("voluptuous")
@@ -96,6 +121,8 @@ sys.modules.setdefault("homeassistant.helpers.entity_platform", entity_platform)
 sys.modules.setdefault("homeassistant.helpers.config_validation", cv_mod)
 sys.modules.setdefault("homeassistant.helpers.event", event_mod)
 sys.modules.setdefault("homeassistant.exceptions", exceptions_mod)
+sys.modules.setdefault("homeassistant.util", util_mod)
+sys.modules.setdefault("homeassistant.util.dt", dt_mod)
 sys.modules.setdefault("voluptuous", vol_mod)
 sys.modules.setdefault("bleak_retry_connector", bleak_retry)
 
@@ -121,11 +148,11 @@ class DummyHass:
 
 
 def test_validate_scene_accepts_known_scene():
-    entity = light.MeRGBWLight("00:11:22:33:44:55", "Test", DummyHass(), "sunset_light")
+    entity = light.MeRGBWLight("00:11:22:33:44:55", "Test", DummyHass(), "sunset_light", 300)
     entity._validate_scene("ghost")
 
 
 def test_validate_scene_rejects_unknown_scene():
-    entity = light.MeRGBWLight("00:11:22:33:44:55", "Test", DummyHass(), "sunset_light")
+    entity = light.MeRGBWLight("00:11:22:33:44:55", "Test", DummyHass(), "sunset_light", 300)
     with pytest.raises(HomeAssistantError):
         entity._validate_scene("not-a-scene")
