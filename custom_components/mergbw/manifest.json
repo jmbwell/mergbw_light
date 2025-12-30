@@ -1,7 +1,7 @@
 
 {
   "domain": "mergbw",
-  "name": "MeRGBW Light",
+  "name": "MeRGBW",
   "documentation": "https://github.com/jmbwell/mergbw",
   "dependencies": ["bluetooth"],
   "codeowners": ["@jmbwell"],
