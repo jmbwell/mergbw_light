@@ -139,13 +139,6 @@ class MeRGBWLight(LightEntity):
         self._weekday_index = {day: idx for idx, day in enumerate(WEEKDAYS)}
         self._attr_available = True
 
-    def _set_available(self, available: bool):
-        """Update availability and push state if it changed."""
-        if self._attr_available == available:
-            return
-        self._attr_available = available
-        self.async_write_ha_state()
-
     def _validate_scene(self, scene_name: str) -> None:
         """Raise if the scene is unsupported by the current profile."""
         packets = self._profile.build_scene(scene_name)
@@ -196,13 +189,11 @@ class MeRGBWLight(LightEntity):
     async def _ensure_connected(self):
         """Ensure the BleakClient is connected."""
         if self._client and self._client.is_connected:
-            self._set_available(True)
             return self._client
 
         device = bluetooth.async_ble_device_from_address(self._hass, self._mac, connectable=True)
         if not device:
             _LOGGER.error("Device %s not found via bluetooth registry", self._mac)
-            self._set_available(False)
             raise HomeAssistantError(f"Device {self._mac} not found")
 
         try:
@@ -214,17 +205,14 @@ class MeRGBWLight(LightEntity):
             )
         except Exception as err:
             _LOGGER.warning("Failed to connect to %s: %s", self._mac, err)
-            self._set_available(False)
             raise HomeAssistantError(f"Failed to connect to {self._mac}") from err
 
-        self._set_available(True)
         return self._client
 
     def _on_disconnected(self, client):
         """Handle disconnection."""
         _LOGGER.info("Disconnected from %s", self._mac)
         self._client = None
-        self._set_available(False)
         if self._disconnect_timer:
             self._disconnect_timer()
             self._disconnect_timer = None
