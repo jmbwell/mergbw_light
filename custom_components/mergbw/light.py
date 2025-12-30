@@ -146,6 +146,12 @@ class MeRGBWLight(LightEntity):
         self._attr_available = available
         self.async_write_ha_state()
 
+    def _validate_scene(self, scene_name: str) -> None:
+        """Raise if the scene is unsupported by the current profile."""
+        packets = self._profile.build_scene(scene_name)
+        if not packets:
+            raise HomeAssistantError(f"Scene '{scene_name}' is not supported by this profile.")
+
     @property
     def unique_id(self):
         """Return a unique ID."""
@@ -283,6 +289,7 @@ class MeRGBWLight(LightEntity):
             self._effect = None
         elif ATTR_EFFECT in kwargs:
             effect = kwargs[ATTR_EFFECT]
+            self._validate_scene(effect)
             await self._run_with_client(lambda client: control.set_scene(client, self._profile, effect))
             self._effect = effect
         else:
@@ -307,9 +314,7 @@ class MeRGBWLight(LightEntity):
 
     async def async_handle_set_scene(self, scene_name: str):
         """Handle the set_scene service call."""
-        packets = self._profile.build_scene(scene_name)
-        if not packets:
-            raise HomeAssistantError(f"Scene '{scene_name}' is not supported by this profile.")
+        self._validate_scene(scene_name)
         await self._run_with_client(lambda client: control.set_scene(client, self._profile, scene_name))
         self._effect = scene_name
         self.async_write_ha_state()
